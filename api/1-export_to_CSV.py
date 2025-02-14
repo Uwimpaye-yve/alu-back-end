@@ -1,42 +1,41 @@
 #!/usr/bin/python3
+"""
+Script to export an employee's TODO list progress to a CSV file.
+"""
 import csv
 import requests
 import sys
 
-def export_employee_todo_to_csv(employee_id):
-    """
-    Fetches the TODO list for an employee and exports it to a CSV file.
-    
-    Args:
-    employee_id (int): The ID of the employee.
-    
-    Returns:
-    None: Saves the employee's task data to a CSV file.
-    """
+def export_todo_progress_to_csv(employee_id):
+    # Fetch employee details
     user_url = f"https://jsonplaceholder.typicode.com/users/{employee_id}"
-    todos_url = f"https://jsonplaceholder.typicode.com/users/{employee_id}/todos"
-    
-    user = requests.get(user_url).json()
-    todos = requests.get(todos_url).json()
-    
-    employee_username = user.get("username")
-    
-    file_name = f"{employee_id}.csv"
-    with open(file_name, mode="w", newline="") as file:
-        writer = csv.writer(file, quoting=csv.QUOTE_ALL)
-        for task in todos:
-            writer.writerow([employee_id, employee_username, task["completed"], task["title"]])
-    
-    print(f"Data exported to {file_name}")
+    user_response = requests.get(user_url)
+    if user_response.status_code != 200:
+        print(f"Error: Unable to fetch employee details for ID {employee_id}.")
+        return
+    user_data = user_response.json()
+    employee_name = user_data.get("username")
 
-if __name__ == "__main__":
-    """
-    Main function to handle command-line input and trigger the CSV export.
-    """
-    if len(sys.argv) == 2:
-        try:
-            export_employee_todo_to_csv(int(sys.argv[1]))
-        except ValueError:
-            print("Employee ID must be an integer")
-    else:
-        print("Usage: python3 1-export_to_CSV.py <employee_id>")
+    # Fetch TODO list for the employee
+    todos_url = f"https://jsonplaceholder.typicode.com/users/{employee_id}/todos"
+    todos_response = requests.get(todos_url)
+    if todos_response.status_code != 200:
+        print(f"Error: Unable to fetch TODO list for employee ID {employee_id}.")
+        return
+    todos_data = todos_response.json()
+
+    # Write to CSV
+    filename = f"{employee_id}.csv"
+    with open(filename, mode="w", newline="") as file:
+        writer = csv.writer(file, quoting=csv.QUOTE_ALL)
+        for task in todos_data:
+            writer.writerow([employee_id, employee_name, task.get("completed"), task.get("title")])
+
+
+if _name_ == "_main_":
+    if len(sys.argv) != 2:
+        print("Usage: ./1-export_to_CSV.py <employee_id>")
+        sys.exit(1)
+
+    employee_id = int(sys.argv[1])
+    export_todo_progress_to_csv(employee_id)
